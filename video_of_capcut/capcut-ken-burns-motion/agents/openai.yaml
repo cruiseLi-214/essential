@@ -1,0 +1,4 @@
+interface:
+  display_name: "CapCut Ken Burns Motion"
+  short_description: "Turn still images into subtle Ken Burns MP4 clips for CapCut."
+  default_prompt: "Convert my image folder into 16:9 1080p Ken Burns micro-motion clips for CapCut."
