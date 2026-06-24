@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dreams Come True"
+  short_description: "Shared drawing canvas with GPT Image editing"
+  default_prompt: "Use $dreams-come-true to open a shared canvas, capture my edits, and refine the result with GPT Image 2."

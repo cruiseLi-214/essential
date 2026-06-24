@@ -1,9 +1,9 @@
 ---
-name: draw
+name: dreams-come-true
 description: Open and operate a local shared drawing canvas connected to Codex, with React Flow workflow nodes, freehand drawing, shapes, text, image placement, masks, persistent step history, and GPT Image 2 generation or editing. Use when the user wants to sketch, annotate, compose, visually direct an image, watch Codex changes appear on a canvas, or iteratively edit an image with GPT Image.
 ---
 
-# Draw
+# Dreams Come True
 
 Use the bundled local app as the shared visual workspace. Keep source scenes, event history, prompts, masks, and generated results in the project directory so the user and Codex see the same state.
 
