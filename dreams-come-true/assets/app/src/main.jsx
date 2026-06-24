@@ -103,6 +103,7 @@ function CanvasEditor({ scene, prompt, onPromptChange, onClose, onSave, onSubmit
   const [maskObjects, setMaskObjects] = useState(scene.maskObjects || []);
   const [quality, setQuality] = useState("low");
   const [error, setError] = useState("");
+  const [imageRevision, setImageRevision] = useState(0);
 
   useEffect(() => {
     setObjects(scene.objects || []);
@@ -155,11 +156,12 @@ function CanvasEditor({ scene, prompt, onPromptChange, onClose, onSave, onSubmit
       let image = imageCache.current.get(object.src);
       if (!image) {
         image = new Image();
+        image.onload = () => setImageRevision((value) => value + 1);
+        image.onerror = () => setError("圖片載入失敗，請重新匯入。");
         image.src = object.src;
-        image.onload = () => render();
         imageCache.current.set(object.src, image);
       }
-      if (image.complete) ctx.drawImage(image, object.x, object.y, object.width, object.height);
+      if (image.complete && image.naturalWidth > 0) ctx.drawImage(image, object.x, object.y, object.width, object.height);
     }
     ctx.restore();
   }, []);
@@ -185,7 +187,7 @@ function CanvasEditor({ scene, prompt, onPromptChange, onClose, onSave, onSubmit
       drawObject(ctx, { ...active, color: "#ef4444" });
       ctx.restore();
     }
-  }, [active, drawObject, maskObjects, objects, tool]);
+  }, [active, drawObject, imageRevision, maskObjects, objects, tool]);
 
   useEffect(() => render(), [render]);
 
@@ -246,8 +248,12 @@ function CanvasEditor({ scene, prompt, onPromptChange, onClose, onSave, onSubmit
       const image = new Image();
       image.onload = () => {
         const scale = Math.min(WIDTH / image.width, HEIGHT / image.height, 0.75);
+        imageCache.current.set(reader.result, image);
         setObjects((items) => [...items, { id: uid(), type: "image", src: reader.result, x: (WIDTH - image.width * scale) / 2, y: (HEIGHT - image.height * scale) / 2, width: image.width * scale, height: image.height * scale }]);
+        setImageRevision((value) => value + 1);
+        event.target.value = "";
       };
+      image.onerror = () => setError("無法讀取這張圖片，請改用 PNG、JPG 或 WebP。");
       image.src = reader.result;
     };
     reader.readAsDataURL(file);
