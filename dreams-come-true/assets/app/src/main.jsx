@@ -38,6 +38,19 @@ const WIDTH = 1280;
 const HEIGHT = 720;
 const COLORS = ["#171717", "#e5484d", "#2563eb", "#16a34a", "#f59e0b", "#ffffff"];
 const uid = () => crypto.randomUUID();
+const ZH_HANT_ARIA = {
+  "node.a11yDescription.default": "按 Enter 或空白鍵選取節點。按 Delete 刪除，按 Escape 取消。",
+  "node.a11yDescription.keyboardDisabled": "按 Enter 或空白鍵選取節點，接著可使用方向鍵移動。按 Delete 刪除，按 Escape 取消。",
+  "node.a11yDescription.ariaLiveMessage": ({ direction, x, y }) => `已將選取的節點向${direction}移動。新位置：x ${x}，y ${y}`,
+  "edge.a11yDescription.default": "按 Enter 或空白鍵選取連線。按 Delete 刪除，按 Escape 取消。",
+  "controls.ariaLabel": "畫布控制面板",
+  "controls.zoomIn.ariaLabel": "放大",
+  "controls.zoomOut.ariaLabel": "縮小",
+  "controls.fitView.ariaLabel": "符合視窗",
+  "controls.interactive.ariaLabel": "切換互動模式",
+  "minimap.ariaLabel": "縮圖導覽",
+  "handle.ariaLabel": "連接點",
+};
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -53,12 +66,12 @@ function DrawNode({ data }) {
   return (
     <div className="flow-node draw-node" onDoubleClick={data.onOpen}>
       <Handle type="target" position={Position.Left} />
-      <div className="node-kicker"><Pencil size={13} /> Shared canvas</div>
-      <strong>{data.label || "Drawing"}</strong>
+      <div className="node-kicker"><Pencil size={13} /> 共用畫布</div>
+      <strong>{data.label || "繪圖"}</strong>
       <div className="node-preview" onClick={data.onOpen}>
-        {data.preview ? <img src={data.preview} alt="" /> : <span>Double-click to draw</span>}
+        {data.preview ? <img src={data.preview} alt="" /> : <span>按兩下開始繪圖</span>}
       </div>
-      <small>{data.objectCount || 0} objects · Codex linked</small>
+      <small>{data.objectCount || 0} 個物件 · 已連接 Codex</small>
       <Handle type="source" position={Position.Right} />
     </div>
   );
@@ -69,8 +82,8 @@ function ResultNode({ data }) {
     <div className="flow-node result-node">
       <Handle type="target" position={Position.Left} />
       <div className="node-kicker"><Sparkles size={13} /> GPT Image 2</div>
-      <img src={data.url} alt={data.prompt || "Generated result"} />
-      <small title={data.prompt}>{data.prompt || "Generated result"}</small>
+      <img src={data.url} alt={data.prompt || "生成結果"} />
+      <small title={data.prompt}>{data.prompt || "生成結果"}</small>
       <Handle type="source" position={Position.Right} />
     </div>
   );
@@ -137,7 +150,7 @@ function CanvasEditor({ scene, prompt, onPromptChange, onClose, onSave, onSubmit
     } else if (object.type === "text") {
       ctx.font = `${object.fontSize || 34}px Inter, system-ui, sans-serif`;
       ctx.fillStyle = object.color || "#171717";
-      ctx.fillText(object.text || "Text", object.x, object.y);
+      ctx.fillText(object.text || "文字", object.x, object.y);
     } else if (object.type === "image" && object.src) {
       let image = imageCache.current.get(object.src);
       if (!image) {
@@ -186,7 +199,7 @@ function CanvasEditor({ scene, prompt, onPromptChange, onClose, onSave, onSubmit
     const point = pos(event);
     setHistory((items) => [...items, { objects, maskObjects }].slice(-30));
     if (tool === "text") {
-      const text = window.prompt("Text");
+      const text = window.prompt("請輸入文字");
       if (text) setObjects((items) => [...items, { id: uid(), type: "text", text, x: point.x, y: point.y, color, fontSize: 40 }]);
       return;
     }
@@ -272,45 +285,45 @@ function CanvasEditor({ scene, prompt, onPromptChange, onClose, onSave, onSubmit
   };
 
   const tools = [
-    ["select", MousePointer2, "Select"], ["pencil", Pencil, "Pencil"], ["rect", Square, "Rectangle"],
-    ["ellipse", Circle, "Ellipse"], ["arrow", ArrowUpRight, "Arrow"], ["text", Type, "Text"],
-    ["eraser", Eraser, "Erase object"], ["mask", Paintbrush, "GPT edit mask"],
+    ["select", MousePointer2, "選取"], ["pencil", Pencil, "畫筆"], ["rect", Square, "矩形"],
+    ["ellipse", Circle, "橢圓"], ["arrow", ArrowUpRight, "箭頭"], ["text", Type, "文字"],
+    ["eraser", Eraser, "刪除物件"], ["mask", Paintbrush, "GPT 編輯遮罩"],
   ];
 
   return (
     <div className="editor-shell">
       <div className="editor-topbar">
-        <div><strong>Draw canvas</strong><span>Every save and GPT result is visible to Codex</span></div>
+        <div><strong>Dreams Come True</strong><span>每次儲存與 GPT 結果都會同步顯示給 Codex</span></div>
         <div className="top-actions">
-          <button onClick={undo} disabled={!history.length}><Undo2 size={16} /> Undo</button>
-          <button onClick={save}><Save size={16} /> Save</button>
+          <button onClick={undo} disabled={!history.length}><Undo2 size={16} /> 復原</button>
+          <button onClick={save}><Save size={16} /> 儲存</button>
           <button className="icon-button" onClick={onClose}><X size={18} /></button>
         </div>
       </div>
       <div className="editor-body">
         <aside className="tool-rail">
           {tools.map(([name, Icon, title]) => <button key={name} className={tool === name ? "active" : ""} onClick={() => setTool(name)} title={title}><Icon size={19} /><span>{title}</span></button>)}
-          <label className="upload-button" title="Import image"><ImageIcon size={19} /><span>Image</span><input type="file" accept="image/*" onChange={importImage} /></label>
+          <label className="upload-button" title="匯入圖片"><ImageIcon size={19} /><span>圖片</span><input type="file" accept="image/*" onChange={importImage} /></label>
         </aside>
         <main className="canvas-stage">
-          <div className="canvas-meta"><span>{WIDTH} × {HEIGHT}</span><span>{objects.length} objects</span>{maskObjects.length > 0 && <span className="mask-badge">{maskObjects.length} mask strokes</span>}</div>
+          <div className="canvas-meta"><span>{WIDTH} × {HEIGHT}</span><span>{objects.length} 個物件</span>{maskObjects.length > 0 && <span className="mask-badge">{maskObjects.length} 筆遮罩</span>}</div>
           <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} onPointerDown={begin} onPointerMove={move} onPointerUp={end} onPointerCancel={end} />
           <div className="style-bar">
             <div className="color-list">{COLORS.map((item) => <button key={item} style={{ background: item }} className={color === item ? "selected" : ""} onClick={() => setColor(item)} />)}</div>
-            <label>Stroke <input type="range" min="2" max="40" value={lineWidth} onChange={(event) => setLineWidth(Number(event.target.value))} /></label>
-            <button onClick={() => { setHistory((items) => [...items, { objects, maskObjects }]); setObjects([]); setMaskObjects([]); }}>Clear</button>
+            <label>筆畫 <input type="range" min="2" max="40" value={lineWidth} onChange={(event) => setLineWidth(Number(event.target.value))} /></label>
+            <button onClick={() => { setHistory((items) => [...items, { objects, maskObjects }]); setObjects([]); setMaskObjects([]); }}>清除</button>
           </div>
         </main>
         <aside className="prompt-panel">
           <div className="panel-title"><Bot size={18} /> GPT Image 2</div>
-          <p>Describe the final result. Paint red areas in Mask mode for targeted changes.</p>
-          <textarea value={prompt} onChange={(event) => onPromptChange(event.target.value)} placeholder="Turn this rough layout into a polished editorial illustration..." />
-          <label>Quality<select value={quality} onChange={(event) => setQuality(event.target.value)}><option value="low">Low · draft</option><option value="medium">Medium</option><option value="high">High · final</option></select></label>
-          {!apiReady && <div className="warning">Start the app with OPENAI_API_KEY to enable generation.</div>}
+          <p>描述你想要的最終效果。如需局部修改，請使用遮罩模式塗紅指定區域。</p>
+          <textarea value={prompt} onChange={(event) => onPromptChange(event.target.value)} placeholder="將這張草圖轉換成精緻的編輯插畫……" />
+          <label>品質<select value={quality} onChange={(event) => setQuality(event.target.value)}><option value="low">低 · 草稿</option><option value="medium">中</option><option value="high">高 · 完稿</option></select></label>
+          {!apiReady && <div className="warning">請使用 OPENAI_API_KEY 啟動應用程式，以啟用圖片生成。</div>}
           {error && <div className="error">{error}</div>}
-          <button className="primary" disabled={busy || !apiReady || !prompt.trim()} onClick={() => submit("edit")}><Sparkles size={17} /> {busy ? "Working…" : "Edit this canvas"}</button>
-          <button disabled={busy || !apiReady || !prompt.trim()} onClick={() => submit("generate")}><Play size={17} /> Generate without canvas</button>
-          <small>Model is fixed to gpt-image-2. Files and steps stay in the project folder.</small>
+          <button className="primary" disabled={busy || !apiReady || !prompt.trim()} onClick={() => submit("edit")}><Sparkles size={17} /> {busy ? "處理中……" : "編輯此畫布"}</button>
+          <button disabled={busy || !apiReady || !prompt.trim()} onClick={() => submit("generate")}><Play size={17} /> 不使用畫布直接生成</button>
+          <small>模型固定為 gpt-image-2。檔案與操作步驟都會保留在專案資料夾中。</small>
         </aside>
       </div>
     </div>
@@ -319,7 +332,7 @@ function CanvasEditor({ scene, prompt, onPromptChange, onClose, onSave, onSubmit
 
 function Timeline({ events }) {
   return (
-    <aside className="timeline"><div className="timeline-title"><Box size={16} /> Shared history</div><div className="timeline-list">
+    <aside className="timeline"><div className="timeline-title"><Box size={16} /> 共用歷程</div><div className="timeline-list">
       {[...events].reverse().map((event) => <div className={`event ${event.source}`} key={event.id}><div><span>{event.source}</span><time>{new Date(event.timestamp).toLocaleTimeString()}</time></div><p>{event.summary}</p></div>)}
     </div></aside>
   );
@@ -366,7 +379,7 @@ function Workspace() {
       let objects = [...(current.scene?.objects || [])];
       let lastPrompt = current.lastPrompt || "";
       const base = { id: uid(), color: payload.color || "#e5484d", lineWidth: payload.lineWidth || 6 };
-      if (command.type === "add-text") objects.push({ ...base, type: "text", text: payload.text || "Codex note", x: payload.x ?? 160, y: payload.y ?? 120, fontSize: payload.fontSize || 40 });
+      if (command.type === "add-text") objects.push({ ...base, type: "text", text: payload.text || "Codex 註記", x: payload.x ?? 160, y: payload.y ?? 120, fontSize: payload.fontSize || 40 });
       if (command.type === "add-rect") objects.push({ ...base, type: "rect", x: payload.x ?? 160, y: payload.y ?? 120, width: payload.width || 260, height: payload.height || 160, fill: payload.fill || "transparent" });
       if (command.type === "add-ellipse") objects.push({ ...base, type: "ellipse", x: payload.x ?? 160, y: payload.y ?? 120, width: payload.width || 220, height: payload.height || 160, fill: payload.fill || "transparent" });
       if (command.type === "add-arrow") objects.push({ ...base, type: "arrow", x: payload.x ?? 160, y: payload.y ?? 120, endX: payload.endX ?? 420, endY: payload.endY ?? 240 });
@@ -391,7 +404,7 @@ function Workspace() {
               api("/api/save", { method: "POST", body: JSON.stringify({ project: current, source: "codex" }) }).then((response) => setProject(response.project)).catch(() => {});
               return current;
             });
-            await api("/api/event", { method: "POST", body: JSON.stringify({ source: "codex", type: "command-applied", summary: `Canvas applied Codex command #${highest}`, payload: { seq: highest } }) });
+            await api("/api/event", { method: "POST", body: JSON.stringify({ source: "codex", type: "command-applied", summary: `畫布已套用 Codex 指令 #${highest}`, payload: { seq: highest } }) });
           }, 80);
         }
         setEvents(data.events || []);
@@ -428,21 +441,21 @@ function Workspace() {
     anchor.click();
   };
 
-  if (!project) return <div className="loading">Opening Draw…</div>;
+  if (!project) return <div className="loading">正在開啟 Dreams Come True……</div>;
 
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div className="brand"><div className="brand-mark"><Pencil size={19} /></div><div><strong>Draw</strong><span>Codex-linked visual workspace</span></div></div>
-        <div className="header-meta"><span className={apiReady ? "ready" : "offline"}>{apiReady ? "GPT Image 2 ready" : "API key needed"}</span><code title={projectDir}>{project.name}</code></div>
-        <div className="header-actions"><button onClick={downloadPreview}><Download size={16} /> PNG</button><button className="primary" onClick={() => setEditorOpen(true)}><Pencil size={16} /> Open canvas</button></div>
+        <div className="brand"><div className="brand-mark"><Pencil size={19} /></div><div><strong>Dreams Come True</strong><span>與 Codex 連接的視覺工作空間</span></div></div>
+        <div className="header-meta"><span className={apiReady ? "ready" : "offline"}>{apiReady ? "GPT Image 2 已就緒" : "需要 API 金鑰"}</span><code title={projectDir}>{project.name}</code></div>
+        <div className="header-actions"><button onClick={downloadPreview}><Download size={16} /> PNG</button><button className="primary" onClick={() => setEditorOpen(true)}><Pencil size={16} /> 開啟畫布</button></div>
       </header>
       <div className="workspace">
         <main className="flow-area">
-          <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={(connection) => setEdges((items) => addEdge(connection, items))} fitView minZoom={0.35}>
-            <Background color="#d7d0c5" gap={24} size={1.2} /><MiniMap pannable zoomable nodeColor={(node) => node.type === "drawing" ? "#d97757" : "#215f4d"} /><Controls />
+          <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={(connection) => setEdges((items) => addEdge(connection, items))} fitView minZoom={0.35} ariaLabelConfig={ZH_HANT_ARIA}>
+            <Background color="#d7d0c5" gap={24} size={1.2} /><MiniMap pannable zoomable nodeColor={(node) => node.type === "drawing" ? "#d97757" : "#215f4d"} aria-label="縮圖導覽" /><Controls aria-label="畫布控制面板" />
           </ReactFlow>
-          <div className="flow-hint">Double-click the canvas node to draw. GPT results return as connected nodes.</div>
+          <div className="flow-hint">按兩下畫布節點開始繪圖；GPT 結果會以連接節點顯示。</div>
           {error && <div className="global-error">{error}</div>}
         </main>
         <Timeline events={events} />

@@ -137,7 +137,7 @@ app.post("/api/save", (req, res) => {
   const saved = event(
     req.body.source === "codex" ? "codex" : "user",
     "scene-saved",
-    `Saved ${next.scene?.objects?.length || 0} drawing objects`,
+    `已儲存 ${next.scene?.objects?.length || 0} 個繪圖物件`,
     { revision: next.revision },
   );
   res.json({ project: next, event: saved });
@@ -148,11 +148,11 @@ app.post("/api/event", (req, res) => {
 });
 
 app.post("/api/generate", async (req, res) => {
-  if (!process.env.OPENAI_API_KEY) return res.status(400).json({ error: "OPENAI_API_KEY is not configured" });
+  if (!process.env.OPENAI_API_KEY) return res.status(400).json({ error: "尚未設定 OPENAI_API_KEY" });
   const { prompt, quality = "low", size = "1536x1024" } = req.body;
-  if (!prompt?.trim()) return res.status(400).json({ error: "Prompt is required" });
+  if (!prompt?.trim()) return res.status(400).json({ error: "請輸入提示詞" });
   try {
-    event("user", "gpt-requested", "Requested GPT Image 2 generation", { prompt, quality, size });
+    event("user", "gpt-requested", "已送出 GPT Image 2 生成請求", { prompt, quality, size });
     const response = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: {
@@ -162,9 +162,9 @@ app.post("/api/generate", async (req, res) => {
       body: JSON.stringify({ model: "gpt-image-2", prompt, quality, size, output_format: "png" }),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data?.error?.message || `OpenAI returned ${response.status}`);
+    if (!response.ok) throw new Error(data?.error?.message || `OpenAI 回傳狀態碼 ${response.status}`);
     const output = Buffer.from(data.data?.[0]?.b64_json || "", "base64");
-    if (!output.length) throw new Error("OpenAI returned no image");
+    if (!output.length) throw new Error("OpenAI 未回傳圖片");
     const filename = `${Date.now()}-generated.png`;
     fs.writeFileSync(path.join(resultsDir, filename), output);
     const result = { id: crypto.randomUUID(), url: `/results/${filename}`, prompt, quality, size, createdAt: new Date().toISOString() };
@@ -174,18 +174,18 @@ app.post("/api/generate", async (req, res) => {
     project.revision = Number(project.revision || 0) + 1;
     project.updatedAt = new Date().toISOString();
     atomicWrite(projectFile, JSON.stringify(project, null, 2));
-    event("system", "gpt-completed", "GPT Image 2 generation completed", { resultId: result.id, filename });
+    event("system", "gpt-completed", "GPT Image 2 圖片生成完成", { resultId: result.id, filename });
     res.json({ result, project });
   } catch (error) {
-    event("system", "gpt-failed", "GPT Image 2 generation failed", { error: String(error.message || error) });
+    event("system", "gpt-failed", "GPT Image 2 圖片生成失敗", { error: String(error.message || error) });
     res.status(500).json({ error: String(error.message || error) });
   }
 });
 
 app.post("/api/edit", async (req, res) => {
-  if (!process.env.OPENAI_API_KEY) return res.status(400).json({ error: "OPENAI_API_KEY is not configured" });
+  if (!process.env.OPENAI_API_KEY) return res.status(400).json({ error: "尚未設定 OPENAI_API_KEY" });
   const { prompt, imageDataUrl, maskDataUrl, quality = "low", size = "1536x1024" } = req.body;
-  if (!prompt?.trim() || !imageDataUrl) return res.status(400).json({ error: "Prompt and image are required" });
+  if (!prompt?.trim() || !imageDataUrl) return res.status(400).json({ error: "請提供提示詞與圖片" });
   try {
     const image = dataUrlBuffer(imageDataUrl);
     const form = new FormData();
@@ -199,7 +199,7 @@ app.post("/api/edit", async (req, res) => {
     form.append("quality", quality);
     form.append("size", size);
     form.append("output_format", "png");
-    event("user", "gpt-requested", "Requested GPT Image 2 canvas edit", {
+    event("user", "gpt-requested", "已送出 GPT Image 2 畫布編輯請求", {
       prompt,
       quality,
       size,
@@ -211,9 +211,9 @@ app.post("/api/edit", async (req, res) => {
       body: form,
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data?.error?.message || `OpenAI returned ${response.status}`);
+    if (!response.ok) throw new Error(data?.error?.message || `OpenAI 回傳狀態碼 ${response.status}`);
     const output = Buffer.from(data.data?.[0]?.b64_json || "", "base64");
-    if (!output.length) throw new Error("OpenAI returned no image");
+    if (!output.length) throw new Error("OpenAI 未回傳圖片");
     const filename = `${Date.now()}-edited.png`;
     fs.writeFileSync(path.join(resultsDir, filename), output);
     const result = { id: crypto.randomUUID(), url: `/results/${filename}`, prompt, quality, size, createdAt: new Date().toISOString() };
@@ -223,10 +223,10 @@ app.post("/api/edit", async (req, res) => {
     project.revision = Number(project.revision || 0) + 1;
     project.updatedAt = new Date().toISOString();
     atomicWrite(projectFile, JSON.stringify(project, null, 2));
-    event("system", "gpt-completed", "GPT Image 2 edit completed", { resultId: result.id, filename });
+    event("system", "gpt-completed", "GPT Image 2 圖片編輯完成", { resultId: result.id, filename });
     res.json({ result, project });
   } catch (error) {
-    event("system", "gpt-failed", "GPT Image 2 edit failed", { error: String(error.message || error) });
+    event("system", "gpt-failed", "GPT Image 2 圖片編輯失敗", { error: String(error.message || error) });
     res.status(500).json({ error: String(error.message || error) });
   }
 });
@@ -235,7 +235,7 @@ app.use(express.static(path.join(process.cwd(), "dist")));
 app.use((_req, res) => res.sendFile(path.join(process.cwd(), "dist", "index.html")));
 
 app.listen(port, "127.0.0.1", () => {
-  event("system", "server-started", `Draw opened on port ${port}`, { projectDir });
-  console.log(`Draw listening on http://127.0.0.1:${port}`);
+  event("system", "server-started", `Dreams Come True 已在連接埠 ${port} 啟動`, { projectDir });
+  console.log(`Dreams Come True listening on http://127.0.0.1:${port}`);
   console.log(`Project directory: ${projectDir}`);
 });
