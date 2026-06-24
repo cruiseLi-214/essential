@@ -1,0 +1,4 @@
+interface:
+  display_name: "Draw"
+  short_description: "Shared drawing canvas with GPT Image editing"
+  default_prompt: "Use $draw to open a shared canvas, capture my edits, and refine the result with GPT Image 2."
